@@ -1,2 +1,4 @@
 # terraform4OCI
-Sample TF Scripts for Oracle Cloud Infrastructure
+Collection of Terraform Scripts for Oracle Cloud Infrastructure
+
+Free to use h.schmaldienst@gmail.com
