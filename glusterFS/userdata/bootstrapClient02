@@ -1,0 +1,40 @@
+# run manually on Gluster client 
+#!/bin/bash
+sed -i '/search/d' /etc/resolv.conf 
+echo "search glusterdemo.oraclevcn.com storsubnet1.glusterdemo.oraclevcn.com storsubnet2.glusterdemo.oraclevcn.com storsubnet3.glusterdemo.oraclevcn.com" >> /etc/resolv.conf
+chattr -R +i /etc/resolv.conf
+#firewall-cmd --zone=public --add-port=111/tcp --add-port=139/tcp --add-port=445/tcp --add-port=965/tcp --add-port=2049/tcp \
+#--add-port=38465-38469/tcp --add-port=631/tcp --add-port=111/udp --add-port=963/udp --add-port=49152-49251/tcp  --permanent
+#firewall-cmd --reload
+systemctl disable firewalld
+systemctl stop firewalld
+# also install docker
+yum install glusterfs glusterfs-fuse attr docker -y
+mkdir -p /mnt/glustervol1/
+chown -R opc:opc /mnt/glustervol1
+setenforce 0
+echo "sleeping...10"
+sleep 10
+echo "storsrv1:/glustervol1 /mnt/glustervol1	glusterfs defaults,_netdev  0 0" >> /etc/fstab 
+mount -a
+systemctl start docker
+docker pull me2digital/caddy
+# run on port 2015
+docker run -d -v /mnt/glustervol1:/docroots --workdir /docroots --publish 2015:2015 --name caddy-demo me2digital/caddy
+# create some index file
+cat <<EOF >/mnt/glustervol1/index.html
+<HTML>
+<HEAD>
+<TITLE>Docker GlusterFS Demo on Oracle Cloud</TITLE></HEAD>
+<BODY BGCOLOR="BBBBBB">
+<P><BR>
+</P>
+<HR><HR><HR><HR>
+<CENTER>
+<H1><B><U>Hallo InfraCoders!</U></B></H1>   
+</CENTER>
+<HR><HR><HR><HR>
+</BODY>
+</HTML>
+EOF
+

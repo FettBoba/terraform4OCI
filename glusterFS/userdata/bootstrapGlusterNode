@@ -1,0 +1,110 @@
+#!/bin/bash
+set -e
+
+### Send stdout, stderr to /var/log/messages
+exec 1> >(logger -s -t $(basename $0)) 2>&1
+
+### Storage setup
+
+BASEADDR="169.254.2.2"
+
+# Set a base address incrementor so we can loop through all the
+# addresses.
+addrCount=0
+
+while [ ${addrCount} -le 32 ]
+do
+
+	CURRADDR=`echo ${BASEADDR} | awk -F\. '{last=$4+'${addrCount}';print $1"."$2"."$3"."last}'`
+
+	clear
+	echo "Attempting connection to ${CURRADDR}"
+
+	mkfifo discpipe
+	# Find all the iSCSI Block Storage volumes attached to the instance but
+	# not configured for use on the instance.  Basically, get a list of the
+	# volumes that the instance can see, the loop through the ones it has,
+	# and add volumes not already configured on the instance.
+	#
+	# First get the list of volumes visible (attached) to the instance
+
+	iscsiadm -m discovery -t st -p ${CURRADDR}:3260 | grep -v uefi | awk '{print $2}' > discpipe 2> /dev/null &
+
+	# If the result is non-zero, that generally means that there are no targets available or
+	# that the portal is reachable but not active.  We make no distinction between the two
+	# and simply skip ahead.
+	result=$?
+	if [ ${result} -ne 0 ]
+	then
+		(( addrCount = addrCount + 1 ))
+		continue
+	fi
+	 
+	# Loop through the list (via the named FIFO pipe below)
+	while read target
+	do
+	    mkfifo sesspipe
+	    # Get the list of the currently attached Block Storage volumes
+	    iscsiadm -m session -P 0 | grep -v uefi | awk '{print $4}' > sesspipe 2> /dev/null &
+	     
+	    # Set a flag, and loop through the sessions (attached, but not configured)
+	    # and see if the volumes match.  If so, skip to the next until we get
+	    # through the list.  Session list is via the pipe.
+	    found="false"
+	    while read session
+	    do
+		if [ ${target} = ${session} ]
+		then
+		    found="true"
+		    break
+		fi
+	    done < sesspipe
+	     
+	    # If the volume is not found, configure it.  Get the resulting device file.
+	    if [ ${found} = "false" ]
+	    then
+		iscsiadm -m node -o new -T ${target} -p ${CURRADDR}:3260
+		iscsiadm -m node -o update -T ${target} -n node.startup -v automatic
+		iscsiadm -m node -T ${target} -p ${CURRADDR}:3260 -l
+		sleep 10
+	    fi
+	done < discpipe
+	
+	(( addrCount = addrCount + 1 ))
+	find . -maxdepth 1 -type p -exec rm {} \;
+done
+echo "Scan Complete."
+
+GDISKS=$(ls -lart /dev/sd* | grep -v '/dev/sda' | awk '{print $10}' | tr '\n' ' ')
+
+for i in $GDISKS;
+    do
+        pvcreate $GDISKS
+    done
+
+vgcreate vg_gluster $GDISKS
+TOTALPE=$(vgdisplay | grep 'Total PE' | awk '{print $3}')
+lvcreate -l $TOTALPE -n brick1 vg_gluster
+mkfs.xfs /dev/vg_gluster/brick1
+mkdir -p /bricks/brick1
+mount /dev/vg_gluster/brick1 /bricks/brick1
+echo "/dev/vg_gluster/brick1  /bricks/brick1    xfs     defaults,_netdev  0 0" >> /etc/fstab
+
+sed -i '/search/d' /etc/resolv.conf
+echo "search glusterdemo.oraclevcn.com storsubnet1.glusterdemo.oraclevcn.com storsubnet2.glusterdemo.oraclevcn.com storsubnet3.glusterdemo.oraclevcn.com" >> /etc/resolv.conf
+
+chattr -R +i /etc/resolv.conf
+
+firewall-cmd --zone=public --add-port=24007-24020/tcp --add-port=49152-49251/tcp --permanent
+firewall-cmd --reload
+#systemctl disable firewalld
+#systemctl stop firewalld
+
+yum install -y centos-release-gluster310.noarch
+yum install -y glusterfs-server samba
+
+systemctl enable glusterd.service
+systemctl start glusterd.service
+mkdir /bricks/brick1/brick
+
+ls -lart /bricks/brick1/

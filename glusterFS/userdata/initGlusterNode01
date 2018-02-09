@@ -1,0 +1,14 @@
+#!/bin/bash
+export HOST1=$(hostname)
+echo $HOST1
+export SERVER2=$(host storsrv2 | awk '{print $4}')
+echo $SERVER2
+export SERVER3=$(host storsrv3 | awk '{print $4}')
+echo $SERVER3
+gluster peer probe $SERVER2
+gluster peer probe $SERVER3
+sleep 20
+gluster volume create glustervol1 replica 3 transport tcp $HOST1:/bricks/brick1/brick $SERVER2:/bricks/brick1/brick $SERVER3:/bricks/brick1/brick force
+sleep 10
+gluster volume start glustervol1
+
