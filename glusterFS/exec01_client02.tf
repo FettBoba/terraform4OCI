@@ -42,7 +42,6 @@ resource "null_resource" "client02_Gluster" {
     }
       inline = [
         "chmod 700 ~/bootstrapClient02"
-#        "~/mysql.sh > ~/mysql.log 2>&1"
 
       ]
     }
