@@ -1,10 +1,10 @@
 resource "oci_core_instance" "storsrv1" {
-    availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[2],"name")}"
+    availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[0],"name")}"
     compartment_id = "${var.compartment_ocid}"
     display_name = "storsrv1"
     image = "${lookup(data.oci_core_images.OLImageOCID.images[0], "id")}"
-    shape = "${var.STORShapeL}"
-    subnet_id = "${oci_core_subnet.STORSubNet_AD3.id}"
+    shape = "${var.STORShapeS}"
+    subnet_id = "${oci_core_subnet.STORSubNet_AD1.id}"
     hostname_label = "storsrv1"
     metadata {
         ssh_authorized_keys = "${var.ssh_public_key}"
@@ -17,7 +17,7 @@ resource "oci_core_instance" "storsrv1" {
 
 # Gets a list of vNIC attachments on the instance
 data "oci_core_vnic_attachments" "InstanceVnics_storsrv1" {
-  availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[2],"name")}"
+  availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[0],"name")}"
   compartment_id = "${var.compartment_ocid}"
   instance_id = "${oci_core_instance.storsrv1.id}"
 }

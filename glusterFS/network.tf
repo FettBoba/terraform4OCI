@@ -401,7 +401,6 @@ resource "oci_core_subnet" "WEBSubNet_AD1" {
   dns_label = "websubnet1"
 }
 
-# SubNets for Web Servers
 resource "oci_core_subnet" "WEBSubNet_AD2" {
   availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[1],"name")}"
   cidr_block = "${var.WEBSubNet2AD2CIDR}"
@@ -415,7 +414,6 @@ resource "oci_core_subnet" "WEBSubNet_AD2" {
   dns_label = "websubnet2"
 }
 
-# SubNets for Web Servers
 resource "oci_core_subnet" "WEBSubNet_AD3" {
   availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[2],"name")}"
   cidr_block = "${var.WEBSubNet3AD3CIDR}"
@@ -429,5 +427,40 @@ resource "oci_core_subnet" "WEBSubNet_AD3" {
   dns_label = "websubnet3"
 }
 
+# SubNets for LB
+resource "oci_core_subnet" "LBSubNet_AD1" {
+  availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[0],"name")}"
+  cidr_block = "${var.LBSubNet1AD1CIDR}"
+  display_name = "LBSubNet_AD1"
+  compartment_id = "${var.compartment_ocid}"
+  vcn_id = "${oci_core_virtual_network.VCN_GlusterDemo.id}"
+  route_table_id = "${oci_core_route_table.RouteTable_GlusterDemo.id}"
+  security_list_ids = ["${oci_core_security_list.SecL_LBSubNets.id}"]
+  dhcp_options_id = "${oci_core_dhcp_options.DHCPoptions.id}"
+  dns_label = "lbsubnet1"
+}
 
+resource "oci_core_subnet" "LBSubNet_AD2" {
+  availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[1],"name")}"
+  cidr_block = "${var.LBSubNet2AD2CIDR}"
+  display_name = "LBSubNet_AD2"
+  compartment_id = "${var.compartment_ocid}"
+  vcn_id = "${oci_core_virtual_network.VCN_GlusterDemo.id}"
+  route_table_id = "${oci_core_route_table.RouteTable_GlusterDemo.id}"
+  security_list_ids = ["${oci_core_security_list.SecL_LBSubNets.id}"]
+  dhcp_options_id = "${oci_core_dhcp_options.DHCPoptions.id}"
+  dns_label = "lbsubnet2"
+}
+
+resource "oci_core_subnet" "LBSubNet_AD3" {
+  availability_domain = "${lookup(data.oci_identity_availability_domains.ADs.availability_domains[2],"name")}"
+  cidr_block = "${var.LBSubNet3AD3CIDR}"
+  display_name = "LBSubNet_AD3"
+  compartment_id = "${var.compartment_ocid}"
+  vcn_id = "${oci_core_virtual_network.VCN_GlusterDemo.id}"
+  route_table_id = "${oci_core_route_table.RouteTable_GlusterDemo.id}"
+  security_list_ids = ["${oci_core_security_list.SecL_LBSubNets.id}"]
+  dhcp_options_id = "${oci_core_dhcp_options.DHCPoptions.id}"
+  dns_label = "lbsubnet3"
+}
 

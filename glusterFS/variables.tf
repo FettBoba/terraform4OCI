@@ -60,8 +60,8 @@ default = "10.100.9.0/24"
 
 #Compute
 variable "WEBShape" {
-#    default = "VM.Standard1.4"
-    default = "VM.DenseIO1.4"
+    default = "VM.Standard1.4"
+#    default = "VM.DenseIO1.4"
 }
 
 variable "STORShapeL" {
